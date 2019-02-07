@@ -5,14 +5,26 @@ using UnityEditor;
 
 public class VoxelTerrainSpawner : MonoBehaviour {
 	public GameObject voxelPrefab;
-	float zoom = .05f;
-	[Range(.1f, .9f)] public float threshold = .5f;
-	[Range(4,100)]public int resolution = 20;
-	public float yBonusScale = 20;
+	float zoom = .09f;
+	public float threshold = 100f;
+	public int resolution = 50;
+	public float yBonusScale = 50;
 	// Use this for initialization
 	void Start () {
 		GenerateVoxels ();	
 	}
+    void Update()
+    {
+        var d = Input.GetAxis("Mouse ScrollWheel");
+        if (d > 0f)
+        {
+            zoom += .01f;
+        }
+        else if (d < 0f)
+        {
+            zoom -= .01f;
+        }
+    }
 	void onValidate(){
 		GenerateVoxels ();
 	}
