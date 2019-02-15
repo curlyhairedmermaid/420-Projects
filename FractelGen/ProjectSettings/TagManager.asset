@@ -5,6 +5,10 @@ TagManager:
   serializedVersion: 2
   tags:
   - polup
+  - NegZPol
+  - PosXPol
+  - NegXPol
+  - PosZPol
   layers:
   - Default
   - TransparentFX
