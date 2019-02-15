@@ -2,72 +2,56 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
+[RequireComponent(typeof(MeshFilter))]
+[RequireComponent(typeof(MeshRenderer))]
 public class BranchSegment : MonoBehaviour {
 
     public BranchSegment prefabeCoral;
-	// Use this for initialization
-    public void Grow(float scale)
+    public Transform[] spawnPoints;
+    // Use this for initialization
+
+    public void Build(float scale)
     {
-        GrowPosZ(scale, new Vector3(0, 0, Random.Range(0, 45)));
-        GrowNegz(scale, new Vector3(0, 0, Random.Range(-45, 0)));
-        GrowPosX(scale, new Vector3(Random.Range(0, 45), 0, 0));
-        GrowNegX(scale, new Vector3(Random.Range(-45, 0), 0, 0));
+        Grow("PosZPol", scale, new Vector3(0, 0, Random.Range(0, 45)));
+        Grow("NegZPol", scale, new Vector3(0, 0, Random.Range(-45, 0)));
+        Grow("PosXPol", scale, new Vector3(Random.Range(0, 45), 0, 0));
+        Grow("NegXPol", scale, new Vector3(Random.Range(-45, 0), 0, 0));
+       combineMeshes();
     }
 
-    public void GrowPosZ(float scale, Vector3 localEuler) {
-        GameObject[] coral = GameObject.FindGameObjectsWithTag("PosZPol");
-        float localScale = scale;
+    public void Grow(string tag, float scale, Vector3 localEuler) {
+        GameObject[] coral = GameObject.FindGameObjectsWithTag(tag);
+        float localScale2 = scale;
         for (int i = 0; i < coral.Length; i++)
         {
-            if (localScale < .3f) return;
+            if (localScale2 < .3f) return;
             BranchSegment newCoral = Instantiate(prefabeCoral, coral[i].transform.position, Quaternion.identity, transform);
-            localScale *= .3f;
-            newCoral.transform.localScale = Vector3.one * scale;
+            localScale2 *= .3f;
+            newCoral.transform.localScale = Vector3.one * localScale2;
             newCoral.transform.localEulerAngles = localEuler;
-            newCoral.GrowPosZ(localScale, new Vector3(0, 0, -10));
+            newCoral.Grow(tag, localScale2, localEuler);
         }
     }
-    public void GrowNegz(float scale, Vector3 localEuler) {
-        GameObject[] coral = GameObject.FindGameObjectsWithTag("NegZPol");
-        float localScale = scale;
-        for (int i = 0; i < coral.Length; i++)
-        {
-            if (localScale < .3f) return;
-            localScale *= .3f;
-            BranchSegment newCoral = Instantiate(prefabeCoral, coral[i].transform.position, Quaternion.identity, transform);
-            newCoral.transform.localScale = Vector3.one * scale;
-            newCoral.transform.localEulerAngles = localEuler;
-            newCoral.GrowNegz(localScale, new Vector3(0, 0, -10));
-        }
-    }
-    public void GrowPosX(float scale, Vector3 localEuler) {
-        GameObject[] coral = GameObject.FindGameObjectsWithTag("PosXPol");
-        float localScale = scale;
-        for (int i = 0; i < coral.Length; i++)
-        {
-            if (localScale < .3f) return;
-            localScale *= .3f;
-            BranchSegment newCoral = Instantiate(prefabeCoral, coral[i].transform.position, Quaternion.identity, transform);
-            newCoral.transform.localScale = Vector3.one * scale;
-            newCoral.transform.localEulerAngles = localEuler;
-            newCoral.GrowPosX(localScale, new Vector3(0, 0, -10));
-        }
-    }
-    public void GrowNegX(float scale, Vector3 localEuler) {
-        GameObject[] coral = GameObject.FindGameObjectsWithTag("NegXPol");
-        float localScale = scale;
-        for (int i = 0; i < coral.Length; i++)
-        {
-            if (localScale < .3f) return;
-            localScale *= .3f;
-            BranchSegment newCoral = Instantiate(prefabeCoral, coral[i].transform.position, Quaternion.identity, transform);
-            newCoral.transform.localScale = Vector3.one * scale;
-            newCoral.transform.localEulerAngles = localEuler;
-            newCoral.GrowNegX(localScale, new Vector3(0, 0, -10));
-        }
-    }
+   public void combineMeshes()
+    {
 
+        MeshFilter[] meshFilters = GetComponentsInChildren<MeshFilter>();
+        CombineInstance[] combine = new CombineInstance[meshFilters.Length];
+
+       for (int i = 0; i < meshFilters.Length; i++)
+            {
+            combine[i].mesh = meshFilters[i].sharedMesh;
+            combine[i].transform = meshFilters[i].transform.localToWorldMatrix;
+            meshFilters[i].gameObject.SetActive(false);
+
+        }
+        transform.GetComponent<MeshFilter>().sharedMesh = new Mesh();
+        transform.GetComponent<MeshFilter>().sharedMesh.CombineMeshes(combine);
+        transform.gameObject.SetActive(true);
+    }
 }
+    
+   
 [CustomEditor(typeof(BranchSegment))]
 public class BranchSegmentEditor : Editor
 {
@@ -78,7 +62,7 @@ public class BranchSegmentEditor : Editor
 
         if (GUILayout.Button("GROW"))
         {
-            (target as BranchSegment).Grow(1);
+            (target as BranchSegment).Build(1);
 
         }
 
