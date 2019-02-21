@@ -9,28 +9,33 @@ public class BranchSegment : MonoBehaviour {
     public BranchSegment prefabeCoral;
     public Transform[] spawnPoints;
     // Use this for initialization
-
+	[Range(2, 8)] public int iterations = 3;
     public void Build(float scale)
     {
-        Grow("PosZPol", scale, new Vector3(0, 0, Random.Range(0, 45)));
-        Grow("NegZPol", scale, new Vector3(0, 0, Random.Range(-45, 0)));
-        Grow("PosXPol", scale, new Vector3(Random.Range(0, 45), 0, 0));
-        Grow("NegXPol", scale, new Vector3(Random.Range(-45, 0), 0, 0));
-       combineMeshes();
+		List<CombineInstance> meshes = new List<CombineInstance> ();
+
+		Grow (iterations, meshes, Vector3.zero, Quaternion.identity, 1);
+
+		Mesh mesh = new Mesh ();
+		mesh.CombineMeshes (meshes.ToArray());
+		MeshFilter meshFilter = GetComponent<MeshFilter> ();
+		meshFilter.mesh = mesh;
     }
 
-    public void Grow(string tag, float scale, Vector3 localEuler) {
-        GameObject[] coral = GameObject.FindGameObjectsWithTag(tag);
-        float localScale2 = scale;
-        for (int i = 0; i < coral.Length; i++)
-        {
-            if (localScale2 < .3f) return;
-            BranchSegment newCoral = Instantiate(prefabeCoral, coral[i].transform.position, Quaternion.identity, transform);
-            localScale2 *= .3f;
-            newCoral.transform.localScale = Vector3.one * localScale2;
-            newCoral.transform.localEulerAngles = localEuler;
-            newCoral.Grow(tag, localScale2, localEuler);
-        }
+	public void Grow(int num, List<CombineInstance> meshes, Vector3 pos, Quaternion rot, float scale) {
+		if (num <= 0)
+			return; 
+		CombineInstance inst = new CombineInstance ();
+		inst.transform = Matrix4x4.TRS (pos, rot, Vector3.one * scale);
+		meshes.Add (inst);
+		num--;
+
+		pos = inst.transform.MultiplyPoint (new Vector3 (0, 1, 0));
+		Quaternion rot1 =  rot * Quaternion.Euler (0, 0, 45);
+		Quaternion rot2 =  rot * Quaternion.Euler (0, 0, 45);
+		scale *= .75f;
+
+		Grow (num, meshes, pos, rot, scale);
     }
    public void combineMeshes()
     {
@@ -38,19 +43,21 @@ public class BranchSegment : MonoBehaviour {
         MeshFilter[] meshFilters = GetComponentsInChildren<MeshFilter>();
         CombineInstance[] combine = new CombineInstance[meshFilters.Length];
 
-       for (int i = 0; i < meshFilters.Length; i++)
-            {
-            combine[i].mesh = meshFilters[i].sharedMesh;
-            combine[i].transform = meshFilters[i].transform.localToWorldMatrix;
-            meshFilters[i].gameObject.SetActive(false);
+		int i = 0;
+		while (i < meshFilters.Length)
+		{
+			combine[i].mesh = meshFilters[i].sharedMesh;
+			combine[i].transform = meshFilters[i].transform.localToWorldMatrix;
+			meshFilters[i].gameObject.SetActive(false);
 
-        }
+			i++;
+		}
         transform.GetComponent<MeshFilter>().sharedMesh = new Mesh();
         transform.GetComponent<MeshFilter>().sharedMesh.CombineMeshes(combine);
         transform.gameObject.SetActive(true);
     }
 }
-    
+
    
 [CustomEditor(typeof(BranchSegment))]
 public class BranchSegmentEditor : Editor
